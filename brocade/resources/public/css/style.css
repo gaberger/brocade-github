@@ -1,5 +1,5 @@
 nav.brocade-red{
- background-color: #9B132A;
+  background-color: #9B132A;
 }
 
 .brocade-logo {
@@ -20,4 +20,20 @@ nav.brocade-red{
   position: absolute;
   font-size: 1.7rem;
   margin-left: 3px;
+}
+
+a.card {
+  color: inherit;
+}
+
+a.card .card-content .card-title {
+  color: #9B132A;
+}
+
+a.card .card-content p {
+  color: rgba(0,0,0,0.87);
+}
+
+.waves-effect.waves-brocade .waves-ripple {
+  background-color: rgba(155, 19, 42, 0.65);
 }
