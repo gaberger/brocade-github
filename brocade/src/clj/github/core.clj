@@ -6,13 +6,22 @@
             [clj-time.core :as t]
             [clojure.data.json :as json]
             [environ.core :refer [env]]
-            [taoensso.timbre :as timbre]))
+            [taoensso.timbre :as timbre]
+            [clojure.tools.cli :refer [parse-opts]]))
 
 
 (timbre/refer-timbre)
 
 (def sites [{:user "brocade" :repo "brocade"}
             {:user "BRCDcomm" :repo "BRCDcomm"}])
+
+(def cli-options
+  [["-h" "--help"]])
+
+(defn exit [exit text]
+  (fatal text)
+  (System/exit exit))
+
 
 (defn edn->json
   "Convert EDN to JSON"
@@ -23,19 +32,21 @@
 (defn get-repos
   "Return collection of repos based on user/org"
   [user token]
+  (info "Get Repositories for use" user)
   (let [repos (repos/user-repos user {:oauth-token token})]
-    (if (contains? repos :status)
-                  (cond
-                    (= (:status repos) 401) (do (fatal "Bad API call, check token") (System/exit 1))
-                    (= (:status repos) 404) (do (error "API Throttled") (System/exit 1))
-                    )
-                  (pmap #(select-keys % [:name :html_url :forks :description])
-                        repos)
-                  )))
+    ;(if (contains? repos :status)
+    (if (instance? clojure.lang.PersistentArrayMap repos)
+      (cond
+        (= (:status repos) 401) (exit 1 (str "Bad API call, check token" (:status repos)))
+        (= (:status repos) 404) (exit 1 (str "Repo Not Found Error:" (:status repos)))
+        )
+      (pmap #(select-keys % [:name :html_url :forks :description])
+            repos))))
 
 (defn get-lastcommits
   "Return a collection containing the sha, date, name and url of lastcommit for user and a collection of repos"
   [user repo token]
+  (info "Get Commits" repo)
   (let [lastcommit (first (repos/commits user repo {:oauth-token token}))
         sha (:sha lastcommit)
         date (get-in lastcommit [:commit :author :date])
@@ -92,13 +103,11 @@
       (recur (rest f-coll) lazy-res)))
   )
 
+
 (defn filter-repos
   [repo token]
-  (let [repos (into [] (get-repos repo token))
-        filter-repos (re-remove repo-filter repos)
-
-        ]
-    filter-repos
+  (let [repos (into [] (get-repos repo token))]
+    (re-remove repo-filter repos)
     ))
 
 (defn git-report
@@ -125,13 +134,18 @@
 
     ))
 
-(defn -main [& site]
-  (when (nil? site) (do (println "Please specify github repo") (System/exit 0)))
-  (let [token (env :gittoken)]
-    (if token
-      (spit "resources/public/app/app.edn" (git-report site token))
-      (println "Please set env variable gittoken"))
-    ))
+(defn -main [& args]
+  (let [{:keys [options arguments errors summary]} (clojure.tools.cli/parse-opts args cli-options)]
+    (cond
+      (:help options) (exit 0 "help: lein run <repo>")
+      (not= (count arguments) 1) (exit 1 "args: lein run <repo>")
+      errors (exit 1 "error: lein run <repo>"))
 
+    (let [token (env :gittoken)
+          repo (first arguments)]
+      (if token
+        (spit "resources/public/app/app.edn" (git-report repo token))
+        (println "Please set env variable gittoken"))
+      ))
 
-
+  )
