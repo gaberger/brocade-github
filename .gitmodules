@@ -1,4 +1,4 @@
 
 [submodule "brocade/resources/public"]
 	path = brocade/resources/public
-	url = git@github.com:gaberger/brocade.github.io.git
+	url = https://github.com/brocade/brocade.github.io.git
