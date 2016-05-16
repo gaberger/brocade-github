@@ -5,7 +5,11 @@
             [clj-time.format :as f]
             [clj-time.core :as t]
             [clojure.data.json :as json]
-            [environ.core :refer [env]]))
+            [environ.core :refer [env]]
+            [taoensso.timbre :as timbre]))
+
+
+(timbre/refer-timbre)
 
 (def sites [{:user "brocade" :repo "brocade"}
             {:user "BRCDcomm" :repo "BRCDcomm"}])
@@ -19,9 +23,15 @@
 (defn get-repos
   "Return collection of repos based on user/org"
   [user token]
-  (pmap #(select-keys % [:name :html_url :forks :description])
-        (repos/user-repos user {:oauth-token token}))
-  )
+  (let [repos (repos/user-repos user {:oauth-token token})]
+    (if (contains? repos :status)
+                  (cond
+                    (= (:status repos) 401) (do (fatal "Bad API call, check token") (System/exit 1))
+                    (= (:status repos) 404) (do (error "API Throttled") (System/exit 1))
+                    )
+                  (pmap #(select-keys % [:name :html_url :forks :description])
+                        repos)
+                  )))
 
 (defn get-lastcommits
   "Return a collection containing the sha, date, name and url of lastcommit for user and a collection of repos"
@@ -59,6 +69,7 @@
 (defn get-members
   "Return a list of collaborators"
   [user repos token]
+  (info "Get Collaborators")
   (map #(repos/collaborators user (:name %) {:oauth-token token}) repos)
   )
 
@@ -90,10 +101,11 @@
     filter-repos
     ))
 
-(defn report
+(defn git-report
   "Return a collection of repo commits and contributors"
   [site token]
   ;(let [repos (get-repos site token)
+  (info "Starting github repo collection on" site)
   (let [repos (filter-repos site token)
         report
         (map (fn [repo]
@@ -113,12 +125,13 @@
 
     ))
 
-(defn -main [site]
+(defn -main [& site]
+  (when (nil? site) (do (println "Please specify github repo") (System/exit 0)))
   (let [token (env :gittoken)]
-    (if token)
-      (spit "resources/public/app/app.edn" (report site token))
-      (println "Please set env variable gittoken")
-   ))
+    (if token
+      (spit "resources/public/app/app.edn" (git-report site token))
+      (println "Please set env variable gittoken"))
+    ))
 
 
 

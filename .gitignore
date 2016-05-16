@@ -19,3 +19,4 @@ brocade/resources/config/config.edn
 brocade/resources/public/*
 .DS_Store
 profiles.clj
+*.bak

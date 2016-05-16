@@ -16,6 +16,7 @@
                  [org.clojure/data.json "0.2.6"]
                  [cljs-ajax "0.5.3"]
                  [environ "1.0.2"]
+                 [com.taoensso/timbre "4.3.1"]
                  [org.clojure/core.async "0.2.374"
                   :exclusions [org.clojure/tools.reader]]]
 
