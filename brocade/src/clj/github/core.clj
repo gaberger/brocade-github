@@ -115,11 +115,10 @@
 
 (defn -main [site]
   (let [token (env :gittoken)]
-    (if (nil? token)
-      (do
-        (println "Please set env variable gittoken")
-        (System/exit 0)))
-    (spit "resources/public/app/app.edn" (report site token))))
+    (if token)
+      (spit "resources/public/app/app.edn" (report site token))
+      (println "Please set env variable gittoken")
+   ))
 
 
 
