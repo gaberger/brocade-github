@@ -4,7 +4,6 @@ before_install:
 language: clojure
 lein: lein2
 script:
-    - cd brocade
     - lein run brocade
     - lein cljsbuild once
 
